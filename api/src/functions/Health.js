@@ -1,13 +1,33 @@
-const { app } = require('@azure/functions');
+const { app } = require("@azure/functions");
+const { getContainer } = require("../cosmosClient");
 
-app.http('Health', {
-    methods: ['GET', 'POST'],
-    authLevel: 'anonymous',
-    handler: async (request, context) => {
-        context.log(`Http function processed request for url "${request.url}"`);
+app.http("Health", {
+  methods: ["GET"],
+  authLevel: "anonymous",
+  handler: async (request, context) => {
+    try {
+      await getContainer("mediaItems");
 
-        const name = request.query.get('name') || await request.text() || 'world';
+      return {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ok: true,
+          service: "media-mini-api",
+          time: new Date().toISOString(),
+        }),
+      };
+    } catch (err) {
+      context.error("Health check failed:", err);
 
-        return { body: `Hello, ${name}!` };
+      return {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ok: false,
+          error: err.message,
+        }),
+      };
     }
+  },
 });
