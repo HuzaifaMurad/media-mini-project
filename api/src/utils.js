@@ -1,17 +1,14 @@
 const crypto = require("crypto");
 
-function json(context, status, body) {
-  context.res = {
+function json(status, body) {
+  return {
     status,
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   };
 }
 
 function makeId(prefix) {
-  // Example: media_1a2b3c4d
   return `${prefix}_${crypto.randomBytes(4).toString("hex")}`;
 }
 
