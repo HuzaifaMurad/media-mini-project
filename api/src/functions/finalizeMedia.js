@@ -1,6 +1,7 @@
 const { app } = require("@azure/functions");
 const { BlobServiceClient } = require("@azure/storage-blob");
 const { getContainer } = require("../cosmosClient");
+const { requireRole } = require("../auth");
 
 function getBlobServiceClient() {
   const accountName = process.env.STORAGE_ACCOUNT_NAME;
@@ -14,18 +15,27 @@ function getBlobServiceClient() {
   return BlobServiceClient.fromConnectionString(connString);
 }
 
-app.http("finalizeMediaV4", {
+app.http("finalizeMedia", {
   methods: ["POST"],
   authLevel: "anonymous",
-  route: "v4/media/{id}/finalize",
+  route: "media/{id}/finalize", // ✅ consistent
   handler: async (request, context) => {
     try {
+      const guard = requireRole(request, "Creator");
+      if (!guard.ok) return { status: guard.status, jsonBody: { ok: false, error: guard.error } };
+      const creatorId = guard.userId;
+
       const id = request.params.id;
       if (!id) return { status: 400, jsonBody: { ok: false, error: "id is required" } };
 
       const mediaContainer = await getContainer("mediaItems");
       const { resource } = await mediaContainer.item(id, "MEDIA").read();
       if (!resource) return { status: 404, jsonBody: { ok: false, error: "media not found" } };
+
+      // ✅ Only allow creator to finalize their own media
+      if (resource.creatorId !== creatorId) {
+        return { status: 403, jsonBody: { ok: false, error: "You can only finalize your own uploads." } };
+      }
 
       // verify blob exists
       const containerName = process.env.STORAGE_CONTAINER_NAME || "media";
@@ -46,7 +56,7 @@ app.http("finalizeMediaV4", {
 
       return { status: 200, jsonBody: { ok: true } };
     } catch (err) {
-      context.error("finalizeMediaV4 error", err);
+      context.error("finalizeMedia error", err);
       return { status: 500, jsonBody: { ok: false, error: err.message } };
     }
   }

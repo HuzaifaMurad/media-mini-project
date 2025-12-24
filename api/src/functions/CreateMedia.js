@@ -75,6 +75,8 @@ const { app } = require("@azure/functions");
 const { makeUploadSasUrl } = require("../sas");
 const { getContainer } = require("../cosmosClient"); // reuse your existing helper
 const crypto = require("crypto");
+const { requireRole } = require("../auth");
+
 
 function makeId(prefix) {
   return `${prefix}_${crypto.randomBytes(4).toString("hex")}`;
