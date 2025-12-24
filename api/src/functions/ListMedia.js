@@ -9,19 +9,32 @@ app.http("ListMedia", {
   handler: async (request, context) => {
     try {
       const container = await getContainer("mediaItems");
-
       const url = new URL(request.url);
 
       const query = (url.searchParams.get("query") || "").trim().toLowerCase();
+      const includeDrafts = url.searchParams.get("includeDrafts") === "true";
+
       const skip = Math.max(parseInt(url.searchParams.get("skip") || "0", 10), 0);
       const take = Math.min(Math.max(parseInt(url.searchParams.get("take") || "20", 10), 1), 50);
 
       let sql = "SELECT * FROM c WHERE c.pk = @pk";
       const params = [{ name: "@pk", value: "MEDIA" }];
 
+      // ✅ Consumer-safe: hide drafts by default
+      if (!includeDrafts) {
+        sql += " AND c.status = @status";
+        params.push({ name: "@status", value: "active" });
+      }
+
+      // ✅ Search title/caption/location + people[]
       if (query) {
         sql +=
-          " AND (CONTAINS(LOWER(c.title), @q) OR CONTAINS(LOWER(c.caption), @q) OR CONTAINS(LOWER(c.location), @q))";
+          " AND (" +
+          "CONTAINS(LOWER(c.title), @q) " +
+          "OR CONTAINS(LOWER(c.caption), @q) " +
+          "OR CONTAINS(LOWER(c.location), @q) " +
+          "OR EXISTS(SELECT VALUE p FROM p IN c.people WHERE CONTAINS(LOWER(p), @q))" +
+          ")";
         params.push({ name: "@q", value: query });
       }
 

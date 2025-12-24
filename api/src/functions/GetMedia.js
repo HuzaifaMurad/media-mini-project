@@ -11,12 +11,20 @@ app.http("GetMedia", {
       const id = request.params?.id;
       if (!id) return json(400, { ok: false, error: "id is required" });
 
+      const url = new URL(request.url);
+      const includeDrafts = url.searchParams.get("includeDrafts") === "true";
+
       const container = await getContainer("mediaItems");
 
       // pk for all media docs is "MEDIA"
       const { resource } = await container.item(id, "MEDIA").read();
 
       if (!resource) return json(404, { ok: false, error: "media not found" });
+
+      // ✅ Consumer-safe: hide drafts unless explicitly allowed
+      if (!includeDrafts && resource.status !== "active") {
+        return json(404, { ok: false, error: "media not found" });
+      }
 
       return json(200, { ok: true, item: resource });
     } catch (err) {
