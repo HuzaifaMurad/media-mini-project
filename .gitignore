@@ -3,3 +3,4 @@ frontend/.dart_tool/
 
 # Azure Functions
 api/local.settings.json
+.DS_Store
