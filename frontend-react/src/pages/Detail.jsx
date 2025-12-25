@@ -2,11 +2,13 @@ import React, { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { addComment, getMedia, listComments, ratingSummary, setRating } from "../api/media";
 import { useAuth } from "../state/AuthProvider";
+import { useNavigate, useParams } from "react-router-dom";
+
 
 function Stars({ value, onSelect, disabled }) {
   return (
     <div style={{ display: "flex", gap: 4 }}>
-      {[1,2,3,4,5].map((v) => (
+      {[1, 2, 3, 4, 5].map((v) => (
         <button
           key={v}
           disabled={disabled}
@@ -26,7 +28,9 @@ function Stars({ value, onSelect, disabled }) {
   );
 }
 
-export default function Detail({ id, onBack }) {
+export default function Detail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const { me } = useAuth();
   const [comment, setComment] = useState("");
@@ -79,7 +83,8 @@ export default function Detail({ id, onBack }) {
 
   return (
     <div style={{ padding: 16, maxWidth: 900 }}>
-      <button onClick={onBack}>← Back</button>
+     <button onClick={() => navigate(-1)}>← Back</button>
+
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 12 }}>
         <div style={{ border: "1px solid #eee", borderRadius: 12, overflow: "hidden" }}>

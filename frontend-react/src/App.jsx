@@ -37,6 +37,7 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Feed from "./pages/Feed";
 import CreatorUpload from "./pages/CreatorUpload";
+import Detail from "./pages/Detail";
 
 export default function App() {
   return (
@@ -49,6 +50,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Feed />} />
         <Route path="/upload" element={<CreatorUpload />} />
+
+        {/* ✅ Detail page */}
+        <Route path="/media/:id" element={<Detail />} />
       </Routes>
     </BrowserRouter>
   );

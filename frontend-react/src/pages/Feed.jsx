@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listMedia } from "../api/media";
+import { useNavigate } from "react-router-dom";
 
-export default function Feed({ onOpen }) {
+export default function Feed() {
   const [q, setQ] = useState("");
+  const navigate = useNavigate();
 
   const { data = [], isLoading, error, refetch } = useQuery({
     queryKey: ["media", q],
@@ -22,7 +24,11 @@ export default function Feed({ onOpen }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
         {data.map((m) => (
-          <div key={m.id} style={{ cursor: "pointer" }} onClick={() => onOpen(m.id)}>
+          <div
+            key={m.id}
+            style={{ cursor: "pointer" }}
+            onClick={() => navigate(`/media/${m.id}`)}
+          >
             <div style={{ width: "100%", aspectRatio: "1/1", overflow: "hidden", borderRadius: 12, border: "1px solid #eee" }}>
               <img src={m.blobUrl} alt={m.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
