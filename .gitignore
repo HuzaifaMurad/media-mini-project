@@ -4,3 +4,27 @@ frontend/.dart_tool/
 # Azure Functions
 api/local.settings.json
 .DS_Store
+# Azurite
+AzuriteConfig
+__blobstorage__/
+__azurite_db_*.json
+
+# Node/React
+node_modules/
+dist/
+build/
+
+# Old Flutter
+frontend/
+
+# macOS/IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Azurite
+AzuriteConfig
+api/AzuriteConfig
+frontend/AzuriteConfig
+__blobstorage__/
+__azurite_db_*.json
