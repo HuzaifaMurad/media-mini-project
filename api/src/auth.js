@@ -64,6 +64,16 @@ function requireAuth(request) {
 }
 
 function requireRole(request, requiredRole) {
+   if (process.env.DEMO_MODE === "true") {
+    const demoUser = request.headers.get("x-demo-user");
+    const demoRolesRaw = request.headers.get("x-demo-roles") || "";
+    const demoRoles = demoRolesRaw.split(",").map(s => s.trim());
+
+    if (demoUser && demoRoles.includes(requiredRole)) {
+      return { ok: true, userId: demoUser, roles: demoRoles };
+    }
+  }
+
   // ✅ Local development bypass
   if (process.env.LOCAL_DEV_BYPASS_AUTH === "true") {
     return { ok: true, userId: "local_user", roles: [requiredRole] };
