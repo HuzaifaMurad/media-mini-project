@@ -28,3 +28,4 @@ api/AzuriteConfig
 frontend/AzuriteConfig
 __blobstorage__/
 __azurite_db_*.json
+api_deploy.zip
