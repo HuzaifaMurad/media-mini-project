@@ -3,7 +3,28 @@ const { BlobServiceClient } = require("@azure/storage-blob");
 const { getContainer } = require("../cosmosClient");
 const { requireRole } = require("../auth");
 
+// function getBlobServiceClient() {
+//   const accountName = process.env.STORAGE_ACCOUNT_NAME;
+//   const accountKey = process.env.STORAGE_ACCOUNT_KEY;
+
+//   if (!accountName || !accountKey) throw new Error("Missing STORAGE_ACCOUNT_NAME or STORAGE_ACCOUNT_KEY");
+
+//   const connString =
+//     `DefaultEndpointsProtocol=https;AccountName=${accountName};AccountKey=${accountKey};EndpointSuffix=core.windows.net`;
+
+//   return BlobServiceClient.fromConnectionString(connString);
+// }
+
+
+function isAzurite() {
+  return (process.env.AzureWebJobsStorage || "").includes("UseDevelopmentStorage=true");
+}
+
 function getBlobServiceClient() {
+  if (isAzurite()) {
+    return BlobServiceClient.fromConnectionString("UseDevelopmentStorage=true");
+  }
+
   const accountName = process.env.STORAGE_ACCOUNT_NAME;
   const accountKey = process.env.STORAGE_ACCOUNT_KEY;
 
@@ -14,6 +35,8 @@ function getBlobServiceClient() {
 
   return BlobServiceClient.fromConnectionString(connString);
 }
+
+
 
 app.http("finalizeMedia", {
   methods: ["POST"],

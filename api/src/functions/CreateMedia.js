@@ -79,75 +79,78 @@ const { requireRole } = require("../auth");
 
 
 function makeId(prefix) {
-  return `${prefix}_${crypto.randomBytes(4).toString("hex")}`;
+    return `${prefix}_${crypto.randomBytes(4).toString("hex")}`;
 }
 
 app.http("createMedia", {
-  methods: ["POST"],
-  authLevel: "anonymous",
-  route: "media",
-  handler: async (request, context) => {
-    try {
-      const body = await request.json();
+    methods: ["POST"],
+    authLevel: "anonymous",
+    route: "media",
+    handler: async (request, context) => {
+        try {
+            const guard = requireRole(request, "Creator");
+            if (!guard.ok) return { status: guard.status, jsonBody: { ok: false, error: guard.error } };
+            const creatorId = guard.userId;
+            const body = await request.json();
 
-      const title = (body.title || "").trim();
-      const caption = (body.caption || "").trim();
-      const location = (body.location || "").trim();
-      const people = Array.isArray(body.people)
-        ? body.people.map(p => String(p).trim()).filter(Boolean)
-        : [];
+            const title = (body.title || "").trim();
+            const caption = (body.caption || "").trim();
+            const location = (body.location || "").trim();
+            const people = Array.isArray(body.people)
+                ? body.people.map(p => String(p).trim()).filter(Boolean)
+                : [];
 
-      const fileName = (body.fileName || "").trim();
-      const contentType = (body.contentType || "").trim();
+            const fileName = (body.fileName || "").trim();
+            const contentType = (body.contentType || "").trim();
 
-      if (!title) return { status: 400, jsonBody: { ok: false, error: "title is required" } };
-      if (!fileName) return { status: 400, jsonBody: { ok: false, error: "fileName is required" } };
-      if (!contentType.startsWith("image/")) {
-        return { status: 400, jsonBody: { ok: false, error: "Only image uploads are supported (contentType must start with image/)" } };
-      }
+            if (!title) return { status: 400, jsonBody: { ok: false, error: "title is required" } };
+            if (!fileName) return { status: 400, jsonBody: { ok: false, error: "fileName is required" } };
+            if (!contentType.startsWith("image/")) {
+                return { status: 400, jsonBody: { ok: false, error: "Only image uploads are supported (contentType must start with image/)" } };
+            }
 
-      const creatorId = "creator_demo"; // Step 11+ we’ll replace with real auth user
+          //  const creatorId = "creator_demo"; // Step 11+ we’ll replace with real auth user
 
-      const id = makeId("media");
-      const ext = fileName.includes(".") ? fileName.split(".").pop() : "jpg";
-      const blobName = `${id}.${ext}`;
+            const id = makeId("media");
+            const ext = fileName.includes(".") ? fileName.split(".").pop() : "jpg";
+            const blobName = `${id}.${ext}`;
 
-      const containerName = process.env.STORAGE_CONTAINER_NAME || "media";
-      const upload = makeUploadSasUrl(containerName, blobName, contentType);
+            const containerName = process.env.STORAGE_CONTAINER_NAME || "media";
+            const upload = makeUploadSasUrl(containerName, blobName, contentType);
 
-      const doc = {
-        id,
-        pk: "MEDIA",
-        creatorId,
-        title,
-        caption,
-        location,
-        people,
-        blobUrl: upload.blobUrl,
-        thumbnailUrl: null,
-        createdAt: new Date().toISOString(),
-        status: "draft"
-      };
+            const doc = {
+                id,
+                pk: "MEDIA",
+                creatorId,
+                title,
+                caption,
+                location,
+                people,
+                blobUrl: upload.blobUrl,
+                thumbnailUrl: null,
+                createdAt: new Date().toISOString(),
+                status: "draft"
+            };
 
-      const mediaContainer = await getContainer("mediaItems");
-      await mediaContainer.items.create(doc);
+            const mediaContainer = await getContainer("mediaItems");
+            await mediaContainer.items.create(doc);
 
-      return {
-        status: 201,
-        jsonBody: {
-          ok: true,
-          id,
-          item: doc,
-          upload: {
-            uploadUrl: upload.uploadUrl,
-            blobUrl: upload.blobUrl,
-            expiresOn: upload.expiresOn
-          }
+            return {
+                status: 201,
+                jsonBody: {
+                    ok: true,
+                    id,
+                    item: doc,
+                    upload: {
+                        uploadUrl: upload.uploadUrl,
+                        blobUrl: upload.blobUrl,
+                        expiresOn: upload.expiresOn
+                    }
+                }
+            };
+        } catch (err) {
+            context.error("createMedia error:", err);
+            return { status: 500, jsonBody: { ok: false, error: err.message } };
         }
-      };
-    } catch (err) {
-      context.error("createMedia error:", err);
-      return { status: 500, jsonBody: { ok: false, error: err.message } };
     }
-  }
 });

@@ -7,11 +7,38 @@ function getClientPrincipal(request) {
   return JSON.parse(decoded);
 }
 
+// function getUserId(request) {
+//   const cp = getClientPrincipal(request);
+//   // userId is usually present; if not, fall back to name
+//   return cp?.userId || cp?.userDetails || null;
+// }
+
 function getUserId(request) {
   const cp = getClientPrincipal(request);
-  // userId is usually present; if not, fall back to name
-  return cp?.userId || cp?.userDetails || null;
+  if (!cp) return null;
+
+  // Try the usual fields first
+  if (cp.userId) return cp.userId;
+  if (cp.userDetails) return cp.userDetails;
+
+  // Fallback: search common claim types
+  const claims = cp.claims || [];
+  const claimTypesToTry = [
+    "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+    "preferred_username",
+    "name",
+    "upn",
+    "email"
+  ];
+
+  for (const t of claimTypesToTry) {
+    const found = claims.find(c => c.typ === t);
+    if (found?.val) return found.val;
+  }
+
+  return null;
 }
+
 
 function getRoles(request) {
   const cp = getClientPrincipal(request);
@@ -24,6 +51,11 @@ function getRoles(request) {
 }
 
 function requireAuth(request) {
+  // ✅ Local development bypass
+  if (process.env.LOCAL_DEV_BYPASS_AUTH === "true") {
+    return { ok: true, userId: "local_user" };
+  }
+
   const userId = getUserId(request);
   if (!userId) {
     return { ok: false, status: 401, error: "Authentication required" };
@@ -32,6 +64,11 @@ function requireAuth(request) {
 }
 
 function requireRole(request, requiredRole) {
+  // ✅ Local development bypass
+  if (process.env.LOCAL_DEV_BYPASS_AUTH === "true") {
+    return { ok: true, userId: "local_user", roles: [requiredRole] };
+  }
+
   const auth = requireAuth(request);
   if (!auth.ok) return auth;
 
@@ -41,5 +78,6 @@ function requireRole(request, requiredRole) {
   }
   return { ok: true, userId: auth.userId, roles };
 }
+
 
 module.exports = { getClientPrincipal, getUserId, getRoles, requireAuth, requireRole };

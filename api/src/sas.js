@@ -1,8 +1,61 @@
+// const {
+//   StorageSharedKeyCredential,
+//   BlobSASPermissions,
+//   generateBlobSASQueryParameters
+// } = require("@azure/storage-blob");
+
+// function getStorageCreds() {
+//   const accountName = process.env.STORAGE_ACCOUNT_NAME;
+//   const accountKey = process.env.STORAGE_ACCOUNT_KEY;
+
+//   if (!accountName || !accountKey) {
+//     throw new Error("Missing STORAGE_ACCOUNT_NAME or STORAGE_ACCOUNT_KEY");
+//   }
+
+//   return { accountName, sharedKeyCredential: new StorageSharedKeyCredential(accountName, accountKey) };
+// }
+
+// function makeUploadSasUrl(containerName, blobName, contentType) {
+//   const { accountName, sharedKeyCredential } = getStorageCreds();
+
+//   // Permission: create + write (upload)
+//   const permissions = new BlobSASPermissions();
+//   permissions.create = true;
+//   permissions.write = true;
+
+//   const expiresOn = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+//   const sas = generateBlobSASQueryParameters(
+//     {
+//       containerName,
+//       blobName,
+//       permissions,
+//       expiresOn,
+//       contentType // helps set correct content-type on upload in some clients
+//     },
+//     sharedKeyCredential
+//   ).toString();
+
+//   const uploadUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}?${sas}`;
+//   const blobUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}`;
+
+//   return { uploadUrl, blobUrl, expiresOn: expiresOn.toISOString() };
+// }
+
+// module.exports = { makeUploadSasUrl };
+
+
+
 const {
   StorageSharedKeyCredential,
   BlobSASPermissions,
   generateBlobSASQueryParameters
 } = require("@azure/storage-blob");
+
+function isAzurite() {
+  return (process.env.AzureWebJobsStorage || "").includes("UseDevelopmentStorage=true");
+}
+
 
 function getStorageCreds() {
   const accountName = process.env.STORAGE_ACCOUNT_NAME;
@@ -15,29 +68,40 @@ function getStorageCreds() {
   return { accountName, sharedKeyCredential: new StorageSharedKeyCredential(accountName, accountKey) };
 }
 
+function getBlobBaseUrl(accountName) {
+  if (isAzurite()) {
+    // Azurite blob endpoint format
+    return `http://127.0.0.1:10000/${accountName}`;
+  }
+  return `https://${accountName}.blob.core.windows.net`;
+}
+
 function makeUploadSasUrl(containerName, blobName, contentType) {
   const { accountName, sharedKeyCredential } = getStorageCreds();
 
-  // Permission: create + write (upload)
   const permissions = new BlobSASPermissions();
   permissions.create = true;
   permissions.write = true;
 
-  const expiresOn = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  const expiresOn = new Date(Date.now() + 15 * 60 * 1000);
 
-  const sas = generateBlobSASQueryParameters(
-    {
-      containerName,
-      blobName,
-      permissions,
-      expiresOn,
-      contentType // helps set correct content-type on upload in some clients
-    },
-    sharedKeyCredential
-  ).toString();
+const sas = generateBlobSASQueryParameters(
+  {
+    containerName,
+    blobName,
+    permissions,
+    expiresOn,
+    contentType,
+    ...(isAzurite() ? { version: "2020-02-10" } : {}) // ✅ add this line
+  },
+  sharedKeyCredential
+).toString();
 
-  const uploadUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}?${sas}`;
-  const blobUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}`;
+
+  const baseUrl = getBlobBaseUrl(accountName);
+
+  const blobUrl = `${baseUrl}/${containerName}/${blobName}`;
+  const uploadUrl = `${blobUrl}?${sas}`;
 
   return { uploadUrl, blobUrl, expiresOn: expiresOn.toISOString() };
 }
