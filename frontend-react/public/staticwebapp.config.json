@@ -1,0 +1,11 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "routes": [
+    {
+      "route": "/api/*",
+      "rewrite": "https://func-mediamini-sass-cubtdzhpfcandgew.polandcentral-01.azurewebsites.net/api/{*path}"
+    }
+  ]
+}
