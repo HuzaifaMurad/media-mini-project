@@ -31,4 +31,18 @@ class MediaDetailProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> addComment(String text) async {
+    if (item == null) return;
+    await api.addComment(item!.id, text);
+    comments = await api.listComments(item!.id);
+    notifyListeners();
+  }
+
+  Future<void> setRating(int value) async {
+    if (item == null) return;
+    await api.setRating(item!.id, value);
+    rating = await api.getRatingSummary(item!.id);
+    notifyListeners();
+  }
 }

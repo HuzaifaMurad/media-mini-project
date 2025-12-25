@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sass_cw2/provider/creator_upload_provider.dart';
 import 'package:sass_cw2/provider/media_provider.dart';
 import 'auth/auth_provider.dart';
 import 'auth/auth_service.dart';
 import 'home_shell.dart';
 import 'api/media_api.dart';
 
-
 void main() {
-  const apiBaseUrl = 'http://localhost:7071/api'; // change to deployed later
+  const apiBaseUrl = 'https://func-mediamini-sass-cubtdzhpfcandgew.polandcentral-01.azurewebsites.net/api'; // change to deployed later
 
   runApp(
     MultiProvider(
@@ -18,6 +18,9 @@ void main() {
         ),
         ChangeNotifierProvider(
           create: (_) => MediaProvider(MediaApi())..load(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CreatorUploadProvider(MediaApi()),
         ),
       ],
       child: const MyApp(),

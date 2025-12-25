@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:sass_cw2/provider/media_provider.dart';
@@ -21,10 +23,18 @@ class FeedPage extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: vm.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : vm.error != null
-                  ? Center(child: Text(vm.error!))
+          child:
+              vm.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : vm.error != null
+                  ? Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        log(vm.error!);
+                      },
+                      child: Text(vm.error!),
+                    ),
+                  )
                   : MediaGrid(items: vm.items),
         ),
       ],
