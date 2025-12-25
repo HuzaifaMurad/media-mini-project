@@ -1,33 +1,55 @@
-import React, { useState } from "react";
-import Navbar from "./components/Navbar";
+// import React, { useState } from "react";
+// import Navbar from "./components/Navbar";
+// import Feed from "./pages/Feed";
+// import Detail from "./pages/Detail";
+// import Upload from "./pages/Upload";
+
+// export default function App() {
+//   const [page, setPage] = useState("feed");
+//   const [selectedId, setSelectedId] = useState(null);
+
+//   return (
+//     <div>
+//       <Navbar onNav={setPage} />
+
+//       {page === "feed" && (
+//         <Feed
+//           onOpen={(id) => {
+//             setSelectedId(id);
+//             setPage("detail");
+//           }}
+//         />
+//       )}
+
+//       {page === "detail" && selectedId && (
+//         <Detail id={selectedId} onBack={() => setPage("feed")} />
+//       )}
+
+//       {page === "upload" && (
+//         <Upload onDone={() => setPage("feed")} />
+//       )}
+//     </div>
+//   );
+// }
+
+
+
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Feed from "./pages/Feed";
-import Detail from "./pages/Detail";
-import Upload from "./pages/Upload";
+import CreatorUpload from "./pages/CreatorUpload";
 
 export default function App() {
-  const [page, setPage] = useState("feed");
-  const [selectedId, setSelectedId] = useState(null);
-
   return (
-    <div>
-      <Navbar onNav={setPage} />
+    <BrowserRouter>
+      <div style={{ padding: 12, borderBottom: "1px solid #eee" }}>
+        <Link to="/" style={{ marginRight: 12 }}>Feed</Link>
+        <Link to="/upload">Upload</Link>
+      </div>
 
-      {page === "feed" && (
-        <Feed
-          onOpen={(id) => {
-            setSelectedId(id);
-            setPage("detail");
-          }}
-        />
-      )}
-
-      {page === "detail" && selectedId && (
-        <Detail id={selectedId} onBack={() => setPage("feed")} />
-      )}
-
-      {page === "upload" && (
-        <Upload onDone={() => setPage("feed")} />
-      )}
-    </div>
+      <Routes>
+        <Route path="/" element={<Feed />} />
+        <Route path="/upload" element={<CreatorUpload />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
