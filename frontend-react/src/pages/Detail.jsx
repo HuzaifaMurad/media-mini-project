@@ -37,7 +37,8 @@ export default function Detail({ id, onBack }) {
   const commentsQ = useQuery({ queryKey: ["comments", id], queryFn: () => listComments(id) });
   const ratingQ = useQuery({ queryKey: ["rating", id], queryFn: () => ratingSummary(id) });
 
-  const canInteract = me.isAuthenticated;
+  // const canInteract = me.isAuthenticated;
+  const canInteract = true;
 
   const rounded = useMemo(() => {
     const a = ratingQ.data?.avg ?? 0;
