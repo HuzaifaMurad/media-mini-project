@@ -1,4 +1,5 @@
 import { api } from "./client";
+import axios from "axios";
 
 export async function listMedia({ query = "", skip = 0, take = 20 } = {}) {
   const res = await api.get("/media", { params: { query, skip, take } });
