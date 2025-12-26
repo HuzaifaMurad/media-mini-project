@@ -1,39 +1,56 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createMediaDraft, finalizeMedia, uploadToSas } from "../api/media";
+import { useAuth } from "../state/AuthProvider";
+import { Link } from "react-router-dom";
+
+const MAX_MB = 8;
 
 export default function CreatorUpload() {
+  const { me, isCreator } = useAuth();
+
   const [title, setTitle] = useState("");
   const [caption, setCaption] = useState("");
   const [location, setLocation] = useState("");
   const [peopleText, setPeopleText] = useState("");
   const [file, setFile] = useState(null);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phase, setPhase] = useState(""); // "", "draft", "upload", "finalize"
   const [error, setError] = useState("");
   const [successId, setSuccessId] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const people = useMemo(() => {
-    return peopleText
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    return peopleText.split(",").map((s) => s.trim()).filter(Boolean);
   }, [peopleText]);
+
+  const isSubmitting = phase !== "";
+
+  function setSelectedFile(f) {
+    setError("");
+    setSuccessId("");
+
+    setFile(f || null);
+
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (f) setPreviewUrl(URL.createObjectURL(f));
+    else setPreviewUrl("");
+  }
 
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
     setSuccessId("");
 
+    if (!me.isAuthenticated) return setError("Please login first.");
+    if (!isCreator) return setError("Creator role required to upload.");
     if (!title.trim()) return setError("Title is required.");
-    if (!file) return setError("Please choose an image file.");
+    if (!file) return setError("Please choose an image.");
+    if (!file.type.startsWith("image/")) return setError("Only image files are supported.");
+    if (file.size > MAX_MB * 1024 * 1024) return setError(`Max file size is ${MAX_MB}MB.`);
 
-    if (!file.type.startsWith("image/")) {
-      return setError("Only image files are supported.");
-    }
-
-    setIsSubmitting(true);
     try {
-      // 1) Create draft (gets SAS uploadUrl)
+      setPhase("draft");
+
       const draftRes = await createMediaDraft({
         title: title.trim(),
         caption: caption.trim(),
@@ -45,144 +62,165 @@ export default function CreatorUpload() {
 
       const id = draftRes?.id;
       const uploadUrl = draftRes?.upload?.uploadUrl;
+      if (!id || !uploadUrl) throw new Error("Draft created but upload URL missing.");
 
-      if (!id || !uploadUrl) {
-        throw new Error("Draft created but upload URL missing.");
-      }
-
-      // 2) Upload bytes to Azure Blob via SAS URL
+      setPhase("upload");
       await uploadToSas(uploadUrl, file);
 
-      // 3) Finalize (draft -> active)
+      setPhase("finalize");
       await finalizeMedia(id);
 
       setSuccessId(id);
 
-      // Reset form
+      // reset form
       setTitle("");
       setCaption("");
       setLocation("");
       setPeopleText("");
-      setFile(null);
+      setSelectedFile(null);
     } catch (err) {
-      const msg =
-        err?.response?.data?.error ||
-        err?.response?.data ||
-        err?.message ||
-        "Upload failed.";
-      setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      const msg = err?.response?.data?.error || err?.message || "Upload failed.";
+      setError(String(msg));
     } finally {
-      setIsSubmitting(false);
+      setPhase("");
     }
   }
 
+  if (!me.isAuthenticated) {
+    return (
+      <div className="stack">
+        <h1 className="title">Creator Upload</h1>
+        <div className="callout">
+          You must <Link to="/login" style={{ textDecoration: "underline" }}>login</Link> to upload.
+        </div>
+      </div>
+    );
+  }
+
+  if (!isCreator) {
+    return (
+      <div className="stack">
+        <h1 className="title">Creator Upload</h1>
+        <div className="callout">
+          Your account is <b>Consumer</b>. Only <b>Creator</b> can upload.
+          <div className="help" style={{ marginTop: 8 }}>
+            Ask your coursework supervisor to add your email into <code>CREATOR_EMAILS</code> in Function App settings.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ maxWidth: 720, margin: "20px auto", padding: 16 }}>
-      <h2 style={{ marginBottom: 12 }}>Creator Upload</h2>
+    <div className="stack">
+      <div>
+        <h1 className="title">Creator Upload</h1>
+        <p className="subtitle">Create a post (draft → upload via SAS → finalize).</p>
+      </div>
 
-      <div
-        style={{
-          border: "1px solid #ddd",
-          borderRadius: 12,
-          padding: 16,
-          background: "#fff",
-        }}
-      >
-        <form onSubmit={onSubmit}>
-          <div style={{ display: "grid", gap: 12 }}>
-            <label>
-              <div style={{ fontWeight: 600 }}>Title *</div>
+      <div className="card cardPad">
+        <form onSubmit={onSubmit} className="stack">
+          <label className="label" htmlFor="title">
+            Title *
+            <input
+              className="input"
+              id="title"
+              name="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Sunset in London"
+              maxLength={80}
+            />
+          </label>
+
+          <label className="label" htmlFor="caption">
+            Caption
+            <textarea
+              className="textarea"
+              id="caption"
+              name="caption"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Write something…"
+              rows={3}
+              maxLength={400}
+            />
+          </label>
+
+          <div className="row" style={{ alignItems: "flex-start" }}>
+            <label className="label" htmlFor="location" style={{ flex: 1 }}>
+              Location
               <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Sunset in London"
-                style={inputStyle}
-              />
-            </label>
-
-            <label>
-              <div style={{ fontWeight: 600 }}>Caption</div>
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="Write something…"
-                rows={3}
-                style={{ ...inputStyle, resize: "vertical" }}
-              />
-            </label>
-
-            <label>
-              <div style={{ fontWeight: 600 }}>Location</div>
-              <input
+                className="input"
+                id="location"
+                name="location"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="e.g. London"
-                style={inputStyle}
+                placeholder="e.g. Manchester"
+                maxLength={40}
               />
             </label>
 
-            <label>
-              <div style={{ fontWeight: 600 }}>People (comma-separated)</div>
+            <label className="label" htmlFor="people" style={{ flex: 1 }}>
+              People (comma-separated)
               <input
+                className="input"
+                id="people"
+                name="people"
                 value={peopleText}
                 onChange={(e) => setPeopleText(e.target.value)}
                 placeholder="e.g. Ali, Ahmed"
-                style={inputStyle}
+                maxLength={120}
               />
             </label>
-
-            <label>
-              <div style={{ fontWeight: 600 }}>Image *</div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-              />
-              {file ? (
-                <div style={{ fontSize: 12, marginTop: 6, opacity: 0.8 }}>
-                  Selected: {file.name} ({Math.round(file.size / 1024)} KB)
-                </div>
-              ) : null}
-            </label>
-
-            {error ? (
-              <div style={{ color: "#b00020", fontWeight: 600 }}>{error}</div>
-            ) : null}
-
-            {successId ? (
-              <div style={{ color: "green", fontWeight: 600 }}>
-                Uploaded successfully ✅ (id: {successId})
-                <div style={{ fontWeight: 400, marginTop: 6 }}>
-                  Go back to the feed and refresh (we’ll automate refresh next).
-                </div>
-              </div>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 10,
-                border: "none",
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                fontWeight: 700,
-              }}
-            >
-              {isSubmitting ? "Uploading..." : "Upload"}
-            </button>
           </div>
+
+          <label className="label" htmlFor="image">
+            Image *
+            <input
+              id="image"
+              name="image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+            />
+            <div className="help">
+              Allowed: images only • Max size: {MAX_MB}MB
+            </div>
+          </label>
+
+          {previewUrl ? (
+            <div className="card" style={{ overflow: "hidden", borderRadius: 18 }}>
+              <img src={previewUrl} alt="Preview" style={{ width: "100%", maxHeight: 380, objectFit: "cover" }} />
+            </div>
+          ) : null}
+
+          {error ? <div className="error">{error}</div> : null}
+
+          {successId ? (
+            <div className="success">
+              Uploaded successfully ✅
+              <div className="help" style={{ marginTop: 6 }}>
+                Post ID: <b>{successId}</b>
+              </div>
+              <div className="row" style={{ marginTop: 10 }}>
+                <Link className="btn" to="/">Back to Feed</Link>
+                <Link className="btn btnPrimary" to={`/media/${successId}`}>Open Post</Link>
+              </div>
+            </div>
+          ) : null}
+
+          <button className="btn btnPrimary" type="submit" disabled={isSubmitting}>
+            {phase === ""
+              ? "Upload"
+              : phase === "draft"
+              ? "Creating draft…"
+              : phase === "upload"
+              ? "Uploading…"
+              : "Finalizing…"}
+          </button>
         </form>
       </div>
     </div>
   );
 }
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid #ccc",
-  marginTop: 6,
-  outline: "none",
-};

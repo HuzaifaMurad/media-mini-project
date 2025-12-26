@@ -47,6 +47,18 @@ export async function uploadLocalBlob(blobName, bytes, contentType) {
   });
 }
 
+
+
+export async function uploadToSas(uploadUrl, file) {
+  const res = await axios.put(uploadUrl, file, {
+    headers: {
+      "x-ms-blob-type": "BlockBlob",
+      "Content-Type": file.type || "application/octet-stream",
+    },
+  });
+  return res.status; // typically 201
+}
+
 // Production SAS upload (direct PUT)
 // export async function uploadToSas(uploadUrl, bytes, contentType) {
 //   const res = await fetch(uploadUrl, {
@@ -64,16 +76,6 @@ export async function uploadLocalBlob(blobName, bytes, contentType) {
 //     throw new Error(`SAS upload failed (${res.status}): ${text}`);
 //   }
 // }
-
-export async function uploadToSas(uploadUrl, file) {
-  const res = await axios.put(uploadUrl, file, {
-    headers: {
-      "x-ms-blob-type": "BlockBlob",
-      "Content-Type": file.type || "application/octet-stream",
-    },
-  });
-  return res.status; // typically 201
-}
 
 
 
