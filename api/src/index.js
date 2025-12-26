@@ -3,5 +3,7 @@ require("./functions/Health");
 require("./functions/CreateMedia");
 require("./functions/finalizeMedia");
 require("./functions/comments");
-require("./functions/ratings");
+require("./functions/rating");
 require("./functions/me");
+require("./functions/loginJwt");
+require("./functions/meJwt");

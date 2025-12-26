@@ -10,7 +10,8 @@
   "dependencies": {
     "@azure/cosmos": "^4.9.0",
     "@azure/functions": "^4.0.0",
-    "@azure/storage-blob": "^12.29.1"
+    "@azure/storage-blob": "^12.29.1",
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
     "azure-functions-core-tools": "^4.x"

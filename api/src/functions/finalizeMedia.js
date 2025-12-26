@@ -1,7 +1,9 @@
 const { app } = require("@azure/functions");
 const { BlobServiceClient } = require("@azure/storage-blob");
 const { getContainer } = require("../cosmosClient");
-const { requireRole } = require("../auth");
+// const { requireRole } = require("../auth");
+const { requireJwtRole } = require("../jwtAuth");
+
 
 // function getBlobServiceClient() {
 //   const accountName = process.env.STORAGE_ACCOUNT_NAME;
@@ -44,7 +46,9 @@ app.http("finalizeMedia", {
   route: "media/{id}/finalize", // ✅ consistent
   handler: async (request, context) => {
     try {
-      const guard = requireRole(request, "Creator");
+    // const guard = requireRole(request, "Creator");
+      const guard = requireJwtRole(request, "Creator");
+
       if (!guard.ok) return { status: guard.status, jsonBody: { ok: false, error: guard.error } };
       const creatorId = guard.userId;
 

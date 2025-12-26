@@ -1,7 +1,9 @@
 const { app } = require("@azure/functions");
 const { getContainer } = require("../cosmosClient");
 const crypto = require("crypto");
-const { requireAuth } = require("../auth");
+//const { requireAuth } = require("../auth");
+const { requireJwtAuth } = require("../jwtAuth");
+
 
 function makeId(prefix) {
     return `${prefix}_${crypto.randomBytes(6).toString("hex")}`;
@@ -14,7 +16,9 @@ app.http("addComment", {
     route: "media/{id}/comments",
     handler: async (request, context) => {
         try {
-            const guard = requireAuth(request);
+          //  const guard = requireAuth(request);
+          const guard = requireJwtAuth(request);
+
             if (!guard.ok) return { status: guard.status, jsonBody: { ok: false, error: guard.error } };
             const userId = guard.userId;
 

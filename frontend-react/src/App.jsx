@@ -38,6 +38,8 @@ import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Feed from "./pages/Feed";
 import CreatorUpload from "./pages/CreatorUpload";
 import Detail from "./pages/Detail";
+import Login from "./pages/Login";
+
 
 export default function App() {
   return (
@@ -45,14 +47,19 @@ export default function App() {
       <div style={{ padding: 12, borderBottom: "1px solid #eee" }}>
         <Link to="/" style={{ marginRight: 12 }}>Feed</Link>
         <Link to="/upload">Upload</Link>
+        <Link to="/login" style={{ marginRight: 12 }}>Login</Link>
+
       </div>
 
       <Routes>
         <Route path="/" element={<Feed />} />
         <Route path="/upload" element={<CreatorUpload />} />
+        <Route path="/login" element={<Login />} />
+
 
         {/* ✅ Detail page */}
         <Route path="/media/:id" element={<Detail />} />
+        
       </Routes>
     </BrowserRouter>
   );

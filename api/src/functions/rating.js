@@ -1,6 +1,8 @@
 const { app } = require("@azure/functions");
 const { getContainer } = require("../cosmosClient");
-const { requireAuth } = require("../auth");
+// const { requireAuth } = require("../auth");
+const { requireJwtAuth } = require("../jwtAuth");
+
 
 // PUT /api/media/{id}/rating  body: { "value": 1..5 }
 app.http("setRating", {
@@ -9,7 +11,9 @@ app.http("setRating", {
     route: "media/{id}/rating",
     handler: async (request, context) => {
         try {
-            const guard = requireAuth(request);
+            // const guard = requireAuth(request);
+            const guard = requireJwtAuth(request);
+
             if (!guard.ok) return { status: guard.status, jsonBody: { ok: false, error: guard.error } };
             const userId = guard.userId;
             const mediaId = request.params.id;

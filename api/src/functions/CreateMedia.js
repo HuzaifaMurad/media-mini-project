@@ -75,7 +75,9 @@ const { app } = require("@azure/functions");
 const { makeUploadSasUrl } = require("../sas");
 const { getContainer } = require("../cosmosClient"); // reuse your existing helper
 const crypto = require("crypto");
-const { requireRole } = require("../auth");
+// const { requireRole } = require("../auth");
+const { requireJwtRole } = require("../jwtAuth");
+
 
 
 function makeId(prefix) {
@@ -88,7 +90,8 @@ app.http("createMedia", {
     route: "media",
     handler: async (request, context) => {
         try {
-            const guard = requireRole(request, "Creator");
+            // const guard = requireRole(request, "Creator");
+            const guard = requireJwtRole(request, "Creator");
             if (!guard.ok) return { status: guard.status, jsonBody: { ok: false, error: guard.error } };
             const creatorId = guard.userId;
             const body = await request.json();
